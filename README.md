@@ -28,6 +28,12 @@ mvn clean verify
 mvn spring-boot:run
 ```
 
+If Java/Maven are not installed locally but Docker is available, run the build in a disposable Maven container:
+
+```powershell
+docker run --rm -v "${PWD}:/workspace" -w /workspace maven:3.9.9-eclipse-temurin-17 mvn -B clean verify
+```
+
 Run the Selenium browser suite (Chrome/Chromium must be installed; Selenium Manager resolves a compatible driver):
 
 ```powershell
