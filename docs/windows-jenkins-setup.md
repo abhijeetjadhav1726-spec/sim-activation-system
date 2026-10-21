@@ -4,7 +4,7 @@ This guide is for the workstation where this repository lives. The Jenkinsfile u
 
 ## 1. Install and verify prerequisites
 
-1. Install a supported 64-bit JDK. Use JDK 17 for this project's compile/test configuration. Jenkins itself must run on a Java version supported by the Jenkins release you install; use the Jenkins download/installer's current requirement.
+1. Install a supported 64-bit JDK. For a current Jenkins LTS, install a Jenkins-supported runtime (Java 21 is a practical choice; follow the selected release's requirement). The project targets Java 17 via `java.version` in `pom.xml`, so Maven can compile it for Java 17 while running on JDK 21. Install JDK 17 too only if you specifically need CI tests to execute on Java 17.
 2. Install Git for Windows, Maven 3.9+, Docker Desktop, and Chrome. Keep their installation paths stable.
 3. Open a new PowerShell window and verify:
 
@@ -26,7 +26,7 @@ This guide is for the workstation where this repository lives. The Jenkinsfile u
 2. Run the installer as an administrator, select the supported Java runtime when prompted, and keep the default controller port `8080` unless another service uses it. The SIM app also defaults to `8080`; they cannot both listen on the same host port at once. Jenkins can use its default 8080 while the app uses 18080 locally, or set Jenkins to another port during setup.
 3. Complete the unlock wizard at `http://localhost:<jenkins-port>` using the initial administrator password path shown by the wizard. Install the suggested plugins.
 4. Create an admin user, set the Jenkins URL to `http://localhost:<jenkins-port>/`, and confirm the dashboard loads.
-5. Install or verify the **Pipeline**, **Git**, **Credentials Binding**, and **JUnit** plugins in **Manage Jenkins → Plugins**. The Pipeline plugin supports the `bat`/`powershell` durable task steps on Windows. Restart Jenkins if the plugin manager requests it.
+5. Install or verify the **Pipeline**, **Git**, **Credentials Binding**, **JUnit**, and **PowerShell** plugins in **Manage Jenkins → Plugins**. Restart Jenkins if the plugin manager requests it.
 
 ## 3. Make the Jenkins build agent see the tools
 
