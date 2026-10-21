@@ -1,0 +1,11 @@
+target/
+data/
+.idea/
+.vscode/
+*.iml
+*.log
+*.png
+!docs/images/
+.env
+secrets.yml
+*.class

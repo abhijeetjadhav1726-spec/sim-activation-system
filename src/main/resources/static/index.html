@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SIM Activation Desk</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #172333; background: #f4f7fb; }
+    body { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    header, section { background: white; border: 1px solid #dce4ef; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    h1 { margin: 0 0 .35rem; } h2 { margin-top: 0; }
+    .muted { color: #58677a; } .row { display: flex; flex-wrap: wrap; gap: .7rem; align-items: end; }
+    label { display: grid; gap: .3rem; font-size: .9rem; }
+    input, select, button { font: inherit; padding: .55rem .7rem; border: 1px solid #bdc9d8; border-radius: 7px; }
+    button { background: #155eef; color: white; border: 0; cursor: pointer; } button.secondary { background: #46566c; }
+    table { width: 100%; border-collapse: collapse; } th, td { padding: .65rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    .cards { display: flex; gap: .7rem; flex-wrap: wrap; } .card { background: #edf3ff; padding: .7rem 1rem; border-radius: 8px; }
+    #message { min-height: 1.4rem; color: #a12b2b; } .actions { display: flex; gap: .35rem; flex-wrap: wrap; }
+    @media (max-width: 700px) { table { font-size: .82rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SIM Activation Desk</h1>
+    <div class="muted">Activation requests, status workflow and daily summary</div>
+  </header>
+  <section>
+    <h2>Summary</h2>
+    <div id="dashboard" class="cards" aria-label="Activation summary"></div>
+  </section>
+  <section>
+    <h2 id="form-title">Create activation request</h2>
+    <form id="activation-form" class="row">
+      <input type="hidden" id="record-id">
+      <label>Customer name<input id="customer-name" maxlength="100" required></label>
+      <label>MSISDN<input id="msisdn" inputmode="numeric" pattern="[0-9]{10,15}" required></label>
+      <label>ICCID<input id="iccid" inputmode="numeric" pattern="[0-9]{18,22}" required></label>
+      <button type="submit">Save request</button>
+      <button type="button" class="secondary" id="cancel-edit" hidden>Cancel edit</button>
+    </form>
+    <p id="message" role="status" aria-live="polite"></p>
+  </section>
+  <section>
+    <h2>Activation records</h2>
+    <form id="search-form" class="row">
+      <label>Search customer, MSISDN or ICCID<input id="search-query"></label>
+      <label>Status<select id="status-filter"><option value="">All statuses</option>
+        <option>DRAFT</option><option>SUBMITTED</option><option>IN_REVIEW</option><option>ACTIVATED</option><option>REJECTED</option>
+      </select></label>
+      <button type="submit">Search</button>
+      <label>Acting role<select id="actor-role"><option>AGENT</option><option>SUPERVISOR</option><option>ADMIN</option></select></label>
+    </form>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>ID</th><th>Customer</th><th>MSISDN</th><th>ICCID</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="records"></tbody>
+      </table>
+    </div>
+  </section>
+  <script>
+    const api = '/api';
+    const $ = (id) => document.getElementById(id);
+    async function request(path, options = {}) {
+      const response = await fetch(api + path, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+      });
+      const body = response.status === 204 ? null : await response.json();
+      if (!response.ok) throw new Error(body?.error || `Request failed (${response.status})`);
+      return body;
+    }
+    function showError(error) { $('message').textContent = error.message; }
+    async function loadDashboard() {
+      const counts = await request('/dashboard');
+      const statuses = ['DRAFT', 'SUBMITTED', 'IN_REVIEW', 'ACTIVATED', 'REJECTED'];
+      $('dashboard').innerHTML = statuses.map(status =>
+        `<div class="card"><strong>${counts[status] || 0}</strong> ${status.replace('_', ' ')}</div>`).join('');
+    }
+    async function loadRecords() {
+      const params = new URLSearchParams();
+      if ($('search-query').value.trim()) params.set('query', $('search-query').value.trim());
+      if ($('status-filter').value) params.set('status', $('status-filter').value);
+      const records = await request('/activations?' + params.toString());
+      $('records').innerHTML = records.map(record => {
+        const buttons = [];
+        if (record.status === 'DRAFT') buttons.push(`<button class="secondary" data-edit="${record.id}">Edit</button>`);
+        const next = { DRAFT: 'SUBMITTED', SUBMITTED: 'IN_REVIEW', IN_REVIEW: 'ACTIVATED' }[record.status];
+        if (next) buttons.push(`<button data-transition="${record.id}" data-next="${next}">${next}</button>`);
+        return `<tr><td>${record.id}</td><td>${escapeHtml(record.customerName)}</td><td>${record.msisdn}</td><td>${record.iccid}</td><td>${record.status}</td><td class="actions">${buttons.join('')}</td></tr>`;
+      }).join('');
+    }
+    function escapeHtml(text) {
+      const element = document.createElement('span');
+      element.textContent = text;
+      return element.innerHTML;
+    }
+    async function refresh() { await Promise.all([loadDashboard(), loadRecords()]); }
+    $('activation-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const id = $('record-id').value;
+      const payload = { customerName: $('customer-name').value, msisdn: $('msisdn').value, iccid: $('iccid').value };
+      try {
+        await request(id ? `/activations/${id}` : '/activations', {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'X-Actor-Role': $('actor-role').value },
+          body: JSON.stringify(payload)
+        });
+        $('message').textContent = 'Activation request saved.';
+        resetForm();
+        await refresh();
+      } catch (error) { showError(error); }
+    });
+    $('search-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      try { await loadRecords(); } catch (error) { showError(error); }
+    });
+    $('records').addEventListener('click', async (event) => {
+      const editId = event.target.dataset.edit;
+      const transitionId = event.target.dataset.transition;
+      try {
+        if (editId) {
+          const record = await request(`/activations/${editId}`);
+          $('record-id').value = record.id;
+          $('customer-name').value = record.customerName;
+          $('msisdn').value = record.msisdn;
+          $('iccid').value = record.iccid;
+          $('form-title').textContent = `Edit draft #${record.id}`;
+          $('cancel-edit').hidden = false;
+        } else if (transitionId) {
+          await request(`/activations/${transitionId}/status`, {
+            method: 'POST',
+            headers: { 'X-Actor-Role': $('actor-role').value },
+            body: JSON.stringify({ status: event.target.dataset.next })
+          });
+          $('message').textContent = 'Status updated.';
+          await refresh();
+        }
+      } catch (error) { showError(error); }
+    });
+    function resetForm() {
+      $('activation-form').reset();
+      $('record-id').value = '';
+      $('form-title').textContent = 'Create activation request';
+      $('cancel-edit').hidden = true;
+    }
+    $('cancel-edit').addEventListener('click', resetForm);
+    refresh().catch(showError);
+  </script>
+</body>
+</html>
