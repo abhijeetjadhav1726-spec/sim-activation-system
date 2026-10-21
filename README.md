@@ -84,6 +84,7 @@ The application uses embedded Tomcat. A production host should place a managed r
 ## CI/CD and configuration
 
 - [Jenkinsfile](./Jenkinsfile) checks out, tests, packages, archives the JAR, runs Selenium on `main`, then builds a versioned image. Publishing and remote deployment are opt-in Jenkins parameters; configure the credentials and agent prerequisites in [docs/devops-workflow.md](./docs/devops-workflow.md) first.
+- For a native Windows Jenkins installation, follow [windows-jenkins-setup.md](./docs/windows-jenkins-setup.md). The pipeline uses Windows batch/PowerShell steps.
 - [Dockerfile](./Dockerfile) builds a non-root runtime image.
 - [Ansible playbook](./ansible/site.yml) installs Docker, creates the app account and directory, runs the requested image, and probes the health endpoint. See its requirements and idempotency/rollback procedure in [docs/local-setup.md](./docs/local-setup.md).
 - Requirements, diagrams, stakeholder context and the 15-task backlog are in [docs/requirements.md](./docs/requirements.md), [docs/architecture.md](./docs/architecture.md), [docs/backlog.md](./docs/backlog.md), and [docs/devops-workflow.md](./docs/devops-workflow.md).

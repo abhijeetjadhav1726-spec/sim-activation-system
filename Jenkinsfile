@@ -17,6 +17,7 @@ pipeline {
         APP_NAME = 'sim-activation'
         IMAGE_TAG = "${BUILD_NUMBER}"
         APP_PORT = '8080'
+        DOCKER_IMAGE = "${params.DOCKER_IMAGE}"
     }
 
     stages {
@@ -27,7 +28,7 @@ pipeline {
         }
         stage('Build and unit test') {
             steps {
-                sh 'mvn -B clean test'
+                bat 'mvn -B clean test'
             }
             post {
                 always {
@@ -37,7 +38,7 @@ pipeline {
         }
         stage('Package') {
             steps {
-                sh 'mvn -B -DskipTests package'
+                bat 'mvn -B -DskipTests package'
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
@@ -46,7 +47,7 @@ pipeline {
                 branch 'main'
             }
             steps {
-                sh 'mvn -B -Pselenium verify'
+                bat 'mvn -B -Pselenium verify'
             }
             post {
                 always {
@@ -60,7 +61,7 @@ pipeline {
                 branch 'main'
             }
             steps {
-                sh 'docker build --pull -t ${APP_NAME}:${IMAGE_TAG} -t ${APP_NAME}:latest .'
+                bat 'docker build --pull -t %APP_NAME%:%IMAGE_TAG% -t %APP_NAME%:latest .'
             }
         }
         stage('Publish image') {
@@ -72,10 +73,15 @@ pipeline {
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh 'echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin'
-                    sh 'docker tag ${APP_NAME}:${IMAGE_TAG} "${DOCKER_IMAGE}:${IMAGE_TAG}"'
-                    sh 'docker push "${DOCKER_IMAGE}:${IMAGE_TAG}"'
-                    sh 'docker logout'
+                    powershell '''
+                        $env:DOCKER_PASSWORD | docker login --username $env:DOCKER_USER --password-stdin
+                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                        docker tag "$env:APP_NAME`:$env:IMAGE_TAG" "$env:DOCKER_IMAGE`:$env:IMAGE_TAG"
+                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                        docker push "$env:DOCKER_IMAGE`:$env:IMAGE_TAG"
+                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                        docker logout
+                    '''
                 }
             }
         }
@@ -88,7 +94,11 @@ pipeline {
             }
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'sim-deploy-key', keyFileVariable: 'SSH_KEY')]) {
-                    sh 'ssh -i "$SSH_KEY" -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "docker pull $DOCKER_IMAGE:$IMAGE_TAG && (docker rm -f sim-activation || true) && docker run -d --restart unless-stopped --name sim-activation -p $APP_PORT:8080 -v sim-activation-data:/app/data $DOCKER_IMAGE:$IMAGE_TAG"'
+                    powershell '''
+                        $remoteCommand = "docker pull $env:DOCKER_IMAGE`:$env:IMAGE_TAG && (docker rm -f sim-activation || true) && docker run -d --restart unless-stopped --name sim-activation -p $env:APP_PORT`:8080 -v sim-activation-data:/app/data $env:DOCKER_IMAGE`:$env:IMAGE_TAG"
+                        & ssh.exe -i $env:SSH_KEY -o BatchMode=yes "$env:DEPLOY_USER@$env:DEPLOY_HOST" $remoteCommand
+                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                    '''
                 }
             }
         }

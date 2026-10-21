@@ -19,6 +19,7 @@
     <properties>
         <java.version>17</java.version>
         <selenium.version>4.29.0</selenium.version>
+        <selenium.server.port>18080</selenium.server.port>
     </properties>
 
     <dependencies>
@@ -97,7 +98,7 @@
                         <configuration>
                             <jmxPort>9010</jmxPort>
                             <arguments>
-                                <argument>--server.port=8080</argument>
+                                <argument>--server.port=${selenium.server.port}</argument>
                                 <argument>--spring.datasource.url=jdbc:h2:mem:selenium;DB_CLOSE_DELAY=-1</argument>
                             </arguments>
                         </configuration>
@@ -117,6 +118,9 @@
                             <includes>
                                 <include>**/*IT.java</include>
                             </includes>
+                            <systemPropertyVariables>
+                                <app.baseUrl>http://localhost:${selenium.server.port}</app.baseUrl>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>
