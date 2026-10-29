@@ -94,4 +94,4 @@ The application uses embedded Tomcat. A production host should place a managed r
 
 ## Repository collaboration
 
-This checkout is connected to `https://github.com/abhijeetjadhav1726-spec/sim-activation-system.git` on `main`. Issue and pull-request templates are present under `.github/`, and [CONTRIBUTING.md](./CONTRIBUTING.md) documents branch names and review rules. The remote currently exposes only `main`; branch protection, a `develop` branch, GitHub issues, and pull requests still require an authorized GitHub user. Never store credentials in this repository.
+This checkout is connected to `https://github.com/abhijeetjadhav1726-spec/sim-activation-system.git`. Issue and pull-request templates are present under `.github/`, and [CONTRIBUTING.md](./CONTRIBUTING.md) documents branch names and review rules. Configure and maintain branch protection through GitHub repository settings; never store credentials in this repository.
