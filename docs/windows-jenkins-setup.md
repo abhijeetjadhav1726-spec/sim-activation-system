@@ -4,7 +4,7 @@ This guide is for the workstation where this repository lives. The Jenkinsfile u
 
 ## 1. Install and verify prerequisites
 
-1. Install a supported 64-bit JDK. For a current Jenkins LTS, install a Jenkins-supported runtime (Java 21 is a practical choice; follow the selected release's requirement). The project targets Java 17 via `java.version` in `pom.xml`, so Maven can compile it for Java 17 while running on JDK 21. Install JDK 17 too only if you specifically need CI tests to execute on Java 17.
+1. Install a supported 64-bit JDK 25 for the project build and tests. The Jenkins controller may require a different Java runtime; follow the selected Jenkins release's requirements and configure the build agent to use JDK 25.
 2. Install Git for Windows, Maven 3.9+, Docker Desktop, and Chrome. Keep their installation paths stable.
 3. Open a new PowerShell window and verify:
 
@@ -56,19 +56,28 @@ The configured repository is `https://github.com/abhijeetjadhav1726-spec/sim-act
 ## 5. Configure optional browser, registry, and deployment stages
 
 - **Selenium:** Install Chrome on the Jenkins agent and verify that Chrome can run in headless mode. Selenium Manager downloads/resolves a compatible driver; the agent needs network access to driver metadata/downloads. Run `mvn -Pselenium verify` once on the agent before enabling the main-branch stage.
-- **Docker image:** The `main` branch builds `sim-activation:<BUILD_NUMBER>`. Verify the Jenkins agent can run `docker build` before relying on this stage.
+- **Docker image and local deploy:** The `main` branch builds `sim-activation:<BUILD_NUMBER>` and, by default, replaces the local `sim-activation` container after successful tests. It binds to port 18080, checks `/actuator/health`, and keeps data in the `sim-activation-data` volume. Set `DEPLOY_LOCAL=false` to skip this stage. Verify the Jenkins agent itself can access the Docker daemon before relying on this stage.
 - **Docker Hub (optional):** Create a Jenkins username/password credential with ID `dockerhub`. Set `PUBLISH_IMAGE=true` and `DOCKER_IMAGE=<your-dockerhub-account>/sim-activation` when running the main branch. Never store registry credentials in Git.
-- **Remote deploy (optional):** Only after a Linux Docker host is authorized and reachable, add the SSH private-key credential with ID `sim-deploy-key`, set `DEPLOY_HOST` and `DEPLOY_USER`, and enable publishing. The host must be able to pull the chosen registry image. Keep these parameters empty/false for local CI-only use.
+- **Remote deploy (optional):** Only after a Linux Docker host is authorized and reachable, add the SSH private-key credential with ID `sim-deploy-key`, set `DEPLOY_HOST` and `DEPLOY_USER`, and enable publishing. The host must be able to pull the chosen registry image. Keep these parameters empty to disable remote deployment.
 
 ## 6. Run locally and troubleshoot port conflicts
 
-- The app defaults to port 8080. The Selenium profile uses port 18080 by default so it can run beside Jenkins on port 8080:
+- The app defaults to port 8080. The Selenium profile uses port 18081 by default so it can run beside Jenkins on 8080 and the local Docker deployment on 18080:
 
   ```powershell
   mvn -Pselenium verify
   ```
 
-- For a different free port, override it with `mvn -Pselenium -Dselenium.server.port=18081 verify`. Selenium is configured to browse the app port, not the Jenkins port.
+- For a different free port, override it with `mvn -Pselenium -Dselenium.server.port=18082 verify`. Selenium is configured to browse the app port, not the Jenkins or Docker app port.
 - If `mvn` or `java` is not recognized, correct system PATH/JAVA_HOME and restart Jenkins so the service reloads the environment.
 - If Docker works in PowerShell but not Jenkins, check the build agent's service identity, Docker Desktop status, named-pipe permissions, and whether the agent is running in the interactive user's session.
 - If a build fails, use the branch job's **Console Output** and test reports under `target/surefire-reports/` or `target/failsafe-reports/` to identify the failing stage.
+
+## Local training run evidence
+
+The user-level Jenkins 2.580.2 instance is available at `http://127.0.0.1:8080`. Its `sim-activation-system` multibranch job scans every five minutes and uses `Jenkinsfile` from each branch. The first branch scan succeeded and discovered `feature/complete-sim-activation-mvp`, `develop`, and `main`.
+
+- Feature builds #1 and #2 passed; build #2 verified commit `492f798`, ran unit tests, packaged and archived the JAR, and passed all four Selenium journeys.
+- `develop` build #1 passed.
+- Pre-merge `main` build #1 failed in Selenium because that branch still configures the app to use occupied port 18080. The feature branch changes the Selenium default to 18081; rerun `main` after the reviewed feature is merged.
+- The local Jenkins endpoint is not publicly reachable, so GitHub webhook delivery and GitHub-side status checks are not configured. The multibranch scan is the local polling trigger.

@@ -3,6 +3,7 @@ pipeline {
 
     parameters {
         booleanParam(name: 'PUBLISH_IMAGE', defaultValue: false, description: 'Push the versioned image to Docker Hub (requires dockerhub credentials)')
+        booleanParam(name: 'DEPLOY_LOCAL', defaultValue: true, description: 'Deploy the tested image to this Jenkins agent using Docker')
         string(name: 'DOCKER_IMAGE', defaultValue: 'your-dockerhub-user/sim-activation', description: 'Registry image name')
         string(name: 'DEPLOY_HOST', defaultValue: '', description: 'Optional SSH host for deployment')
         string(name: 'DEPLOY_USER', defaultValue: '', description: 'SSH deployment user')
@@ -16,7 +17,7 @@ pipeline {
     environment {
         APP_NAME = 'sim-activation'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        APP_PORT = '8080'
+        APP_PORT = '18080'
         DOCKER_IMAGE = "${params.DOCKER_IMAGE}"
     }
 
@@ -43,9 +44,6 @@ pipeline {
             }
         }
         stage('Selenium journeys') {
-            when {
-                branch 'main'
-            }
             steps {
                 bat 'mvn -B -Pselenium verify'
             }
@@ -62,6 +60,47 @@ pipeline {
             }
             steps {
                 bat 'docker build --pull -t %APP_NAME%:%IMAGE_TAG% -t %APP_NAME%:latest .'
+            }
+        }
+        stage('Deploy local container') {
+            when {
+                allOf {
+                    branch 'main'
+                    expression { return params.DEPLOY_LOCAL }
+                }
+            }
+            steps {
+                powershell '''
+                    $containerName = 'sim-activation'
+                    $existing = docker ps -aq --filter "name=^/$containerName$"
+                    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                    if ($existing) {
+                        docker rm -f $containerName
+                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                    }
+
+                    docker run -d --restart unless-stopped --name $containerName -p "$env:APP_PORT`:8080" -v sim-activation-data:/app/data "$env:APP_NAME`:$env:IMAGE_TAG"
+                    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+                    $healthUrl = "http://127.0.0.1:$env:APP_PORT/actuator/health"
+                    $healthy = $false
+                    for ($attempt = 1; $attempt -le 30; $attempt++) {
+                        $status = curl.exe --silent --show-error --output NUL --write-out "%{http_code}" --max-time 5 $healthUrl
+                        if ($LASTEXITCODE -eq 0 -and $status -eq '200') {
+                            $healthy = $true
+                            break
+                        }
+                        Write-Host "Health check attempt $attempt did not return HTTP 200 (status: $status)"
+                        Start-Sleep -Seconds 3
+                    }
+
+                    if (-not $healthy) {
+                        docker logs --tail 100 $containerName
+                        docker rm -f $containerName
+                        exit 1
+                    }
+                    Write-Host "Deployed $env:APP_NAME`:$env:IMAGE_TAG at $healthUrl"
+                '''
             }
         }
         stage('Publish image') {

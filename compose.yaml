@@ -3,7 +3,7 @@ services:
     build: .
     image: sim-activation:0.1.0
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-18080}:8080"
     volumes:
       - sim-activation-data:/app/data
     restart: unless-stopped

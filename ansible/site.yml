@@ -1,18 +1,26 @@
 ---
 - name: Configure the SIM Activation MVP host
   hosts: sim_activation
-  become: true
   vars:
     app_name: sim-activation
     app_user: simapp
     app_dir: /opt/sim-activation
     app_port: 8080
     image: "{{ lookup('env', 'SIM_ACTIVATION_IMAGE') | default('sim-activation:0.1.0', true) }}"
+    docker_runtime_managed: true
+    app_health_url: "http://127.0.0.1:{{ app_port }}/actuator/health"
+  become: "{{ docker_runtime_managed | bool }}"
   tasks:
     - name: Install container runtime prerequisites
       ansible.builtin.package:
         name:
           - docker.io
+        state: present
+      when: docker_runtime_managed | bool
+
+    - name: Ensure Docker group exists
+      ansible.builtin.group:
+        name: docker
         state: present
 
     - name: Ensure application user exists
@@ -37,6 +45,7 @@
         name: docker
         state: started
         enabled: true
+      when: docker_runtime_managed | bool
 
     - name: Run the application container
       community.docker.docker_container:
@@ -50,7 +59,7 @@
           SPRING_PROFILES_ACTIVE: prod
     - name: Check application health endpoint
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ app_port }}/actuator/health"
+        url: "{{ app_health_url }}"
         status_code: 200
       register: health_result
       retries: 10

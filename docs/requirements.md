@@ -23,7 +23,7 @@ SIM activation requests need to move from intake to an auditable decision withou
 - The MVP is limited to record workflow and summary; it does not connect to a carrier, verify identity, provision a network, send notifications, or process payments.
 - No real personal or SIM data, production credentials, or external infrastructure are available in this workspace.
 - The role header is a local training stub, not an authentication boundary.
-- Java 17/Maven and a local H2 database keep the example inexpensive to run; a production data store and identity provider are out of MVP scope.
+- Java 25/Maven and a local H2 database keep the example inexpensive to run; a production data store and identity provider are out of MVP scope.
 
 ## Objectives and success measures
 
@@ -71,7 +71,7 @@ The requester-selected brief is treated as the scope baseline. Approval of the p
 | FR-04 | Enforce role-authorized forward transitions and a reviewer rejection path. |
 | FR-05 | Return dashboard totals for all status values. |
 | NFR-01 | Validate request fields and return readable 4xx errors for invalid/conflicting operations. |
-| NFR-02 | Provide a local setup requiring Java 17/Maven or Docker; expose a health endpoint. |
+| NFR-02 | Provide a local setup requiring Java 25/Maven or Docker; expose a health endpoint. |
 | NFR-03 | Keep the sample non-production: no real customer data or embedded secrets. |
 
 ## Definition of Done
