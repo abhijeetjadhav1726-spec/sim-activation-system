@@ -72,3 +72,12 @@ The configured repository is `https://github.com/abhijeetjadhav1726-spec/sim-act
 - If `mvn` or `java` is not recognized, correct system PATH/JAVA_HOME and restart Jenkins so the service reloads the environment.
 - If Docker works in PowerShell but not Jenkins, check the build agent's service identity, Docker Desktop status, named-pipe permissions, and whether the agent is running in the interactive user's session.
 - If a build fails, use the branch job's **Console Output** and test reports under `target/surefire-reports/` or `target/failsafe-reports/` to identify the failing stage.
+
+## Local training run evidence
+
+The user-level Jenkins 2.580.2 instance is available at `http://127.0.0.1:8080`. Its `sim-activation-system` multibranch job scans every five minutes and uses `Jenkinsfile` from each branch. The first branch scan succeeded and discovered `feature/complete-sim-activation-mvp`, `develop`, and `main`.
+
+- Feature build #1 passed; the pipeline ran unit tests, packaged and archived the JAR, and passed all four Selenium journeys.
+- `develop` build #1 passed.
+- Pre-merge `main` build #1 failed in Selenium because that branch still configures the app to use occupied port 18080. The feature branch changes the Selenium default to 18081; rerun `main` after the reviewed feature is merged.
+- The local Jenkins endpoint is not publicly reachable, so GitHub webhook delivery and GitHub-side status checks are not configured. The multibranch scan is the local polling trigger.
