@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:sim-activation-test;DB_CLOSE_DELAY=-1")
 @AutoConfigureMockMvc
 class ActivationControllerTest {
     @Autowired

@@ -4,7 +4,7 @@ A small, locally runnable SIM activation workflow MVP for DevOps training. It su
 
 ## Technology
 
-- Java 17, Spring Boot 3.4, Maven
+- Java 25 (LTS), Spring Boot 3.5, Maven
 - Spring MVC REST API and static HTML UI
 - Spring Data JPA with H2 file-backed local database
 - Embedded Tomcat on port 8080
@@ -13,7 +13,7 @@ A small, locally runnable SIM activation workflow MVP for DevOps training. It su
 
 ## Run locally
 
-Install a JDK 17 distribution and Maven 3.9 or newer, then from the repository root:
+Install a JDK 25 distribution and Maven 3.9 or newer, then from the repository root:
 
 ```powershell
 mvn spring-boot:run
@@ -31,7 +31,7 @@ mvn spring-boot:run
 If Java/Maven are not installed locally but Docker is available, run the build in a disposable Maven container:
 
 ```powershell
-docker run --rm -v "${PWD}:/workspace" -w /workspace maven:3.9.9-eclipse-temurin-17 mvn -B clean verify
+docker run --rm -v "${PWD}:/workspace" -w /workspace maven:3.9.16-eclipse-temurin-25 mvn -B clean verify
 ```
 
 Run the Selenium browser suite (Chrome/Chromium must be installed; Selenium Manager resolves a compatible driver):
@@ -70,20 +70,23 @@ Build and run locally:
 
 ```powershell
 docker build -t sim-activation:0.1.0 .
-docker run --rm --name sim-activation -p 8080:8080 -v sim-activation-data:/app/data sim-activation:0.1.0
+docker run --rm --name sim-activation -p 18080:8080 -v sim-activation-data:/app/data sim-activation:0.1.0
 ```
 
 Or start it with Compose:
 
 ```powershell
+$env:APP_PORT = '18080'
 docker compose up --build
 ```
+
+Open [http://localhost:18080](http://localhost:18080). Port 18080 avoids the default Jenkins port 8080; set `APP_PORT` to another free host port if needed.
 
 The application uses embedded Tomcat. A production host should place a managed reverse proxy such as Nginx in front of the container and terminate TLS there.
 
 ## CI/CD and configuration
 
-- [Jenkinsfile](./Jenkinsfile) checks out, tests, packages, archives the JAR, runs Selenium on `main`, then builds a versioned image. Publishing and remote deployment are opt-in Jenkins parameters; configure the credentials and agent prerequisites in [docs/devops-workflow.md](./docs/devops-workflow.md) first.
+- [Jenkinsfile](./Jenkinsfile) checks out, tests, packages, archives the JAR, and runs Selenium on every branch. On `main`, it also builds a versioned image and deploys a fresh local container on port 18080 after tests pass. Publishing and remote deployment are opt-in Jenkins parameters; configure the credentials and agent prerequisites in [docs/devops-workflow.md](./docs/devops-workflow.md) first.
 - For a native Windows Jenkins installation, follow [windows-jenkins-setup.md](./docs/windows-jenkins-setup.md). The pipeline uses Windows batch/PowerShell steps.
 - [Dockerfile](./Dockerfile) builds a non-root runtime image.
 - [Ansible playbook](./ansible/site.yml) installs Docker, creates the app account and directory, runs the requested image, and probes the health endpoint. See its requirements and idempotency/rollback procedure in [docs/local-setup.md](./docs/local-setup.md).
@@ -91,4 +94,4 @@ The application uses embedded Tomcat. A production host should place a managed r
 
 ## Repository collaboration
 
-This workspace is prepared for GitHub but is not connected to a remote repository. See [CONTRIBUTING.md](./CONTRIBUTING.md) for branch names, pull request rules, and safe first-push instructions. No credentials or remote repository have been created by this project setup.
+This checkout is connected to `https://github.com/abhijeetjadhav1726-spec/sim-activation-system.git` on `main`. Issue and pull-request templates are present under `.github/`, and [CONTRIBUTING.md](./CONTRIBUTING.md) documents branch names and review rules. The remote currently exposes only `main`; branch protection, a `develop` branch, GitHub issues, and pull requests still require an authorized GitHub user. Never store credentials in this repository.

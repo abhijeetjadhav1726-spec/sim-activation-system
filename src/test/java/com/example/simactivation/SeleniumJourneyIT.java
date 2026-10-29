@@ -12,7 +12,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -76,7 +78,7 @@ class SeleniumJourneyIT {
     void updatesAnExistingDraft() {
         String customer = "Original " + System.nanoTime();
         createRecord(customer);
-        rowFor(customer).findElement(By.cssSelector("[data-edit]")).click();
+        clickWhenAvailable(By.xpath("//tr[td[2][contains(., '" + customer + "')]]//button[@data-edit]"));
         driver.findElement(By.id("customer-name")).clear();
         driver.findElement(By.id("customer-name")).sendKeys("Updated " + customer);
         driver.findElement(By.cssSelector("#activation-form button[type=submit]")).click();
@@ -92,12 +94,11 @@ class SeleniumJourneyIT {
         transitionTo(customer, "IN_REVIEW", "SUPERVISOR");
 
         driver.findElement(By.id("actor-role")).sendKeys("SUPERVISOR");
-        rowFor(customer).findElement(By.cssSelector("[data-next='ACTIVATED']")).click();
+        clickWhenAvailable(By.xpath("//tr[td[2][contains(., '" + customer + "')]]//button[@data-next='ACTIVATED']"));
         wait.until(webDriver -> webDriver.findElement(By.id("message")).getText().contains("Role is not allowed"));
-        assertTrue(rowFor(customer).getText().contains("IN_REVIEW"));
+        waitForRowText(customer, "IN_REVIEW");
 
         transitionTo(customer, "ACTIVATED", "ADMIN");
-        assertTrue(rowFor(customer).getText().contains("ACTIVATED"));
         assertTrue(driver.findElement(By.id("dashboard")).getText().contains("ACTIVATED"));
     }
 
@@ -117,8 +118,30 @@ class SeleniumJourneyIT {
 
     private void transitionTo(String customer, String status, String role) {
         driver.findElement(By.id("actor-role")).sendKeys(role);
-        rowFor(customer).findElement(By.cssSelector("[data-next='" + status + "']")).click();
-        wait.until(webDriver -> rowFor(customer).getText().contains(status));
+        By nextAction = By.xpath("//tr[td[2][contains(., '" + customer + "')]]//button[@data-next='" + status + "']");
+        clickWhenAvailable(nextAction);
+        waitForRowText(customer, status);
+    }
+
+    private void clickWhenAvailable(By locator) {
+        wait.until(webDriver -> {
+            try {
+                webDriver.findElement(locator).click();
+                return true;
+            } catch (NoSuchElementException | StaleElementReferenceException ignored) {
+                return false;
+            }
+        });
+    }
+
+    private void waitForRowText(String customer, String text) {
+        wait.until(webDriver -> {
+            try {
+                return rowFor(customer).getText().contains(text);
+            } catch (StaleElementReferenceException ignored) {
+                return false;
+            }
+        });
     }
 
     private org.openqa.selenium.WebElement rowFor(String customer) {

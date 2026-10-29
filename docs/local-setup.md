@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Java 17 and Maven 3.9+ for `mvn spring-boot:run` / `mvn clean verify`.
+- Java 25 (LTS) and Maven 3.9+ for `mvn spring-boot:run` / `mvn clean verify`.
 - Docker Desktop/Engine for image and container commands.
 - Chrome or Chromium for Selenium browser tests; Jenkins agents need a compatible browser and driver resolution.
 - An Ubuntu/Debian host, Ansible, and the `community.docker` collection for the sample provisioning playbook.

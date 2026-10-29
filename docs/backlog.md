@@ -6,19 +6,19 @@ The board is frozen at 15 tasks for the MVP. Status describes repository readine
 |---|---|---|---|
 | T01 | As product owner, I need the user/pain-point and scope baseline so the team can agree what to build. | Stakeholders, constraints, objectives, measurable criteria and 15-task scope documented. | Done |
 | T02 | As delivery team, I need traceable stories and a Definition of Done. | This backlog provides stories, acceptance criteria, task order and DoD. | Done |
-| T03 | As developer, I need a reproducible Java/Maven project so I can build locally. | Java 17/Spring Boot/Maven structure and local setup documented. | Implemented |
+| T03 | As developer, I need a reproducible Java/Maven project so I can build locally. | Java 25/Spring Boot/Maven structure and local setup documented. | Implemented |
 | T04 | As agent, I need to create and view a validated activation record. | Create API/UI, generated identifier/timestamps, validation and duplicate handling. | Implemented |
 | T05 | As agent, I need to edit drafts and find records quickly. | Draft-only update; combined partial search and status filter. | Implemented |
 | T06 | As operations staff, I need role-owned status transitions. | Agent submit, Supervisor review/reject, Admin activate; unauthorized transitions denied. | Implemented |
 | T07 | As operations lead, I need a current workload summary. | Dashboard counts all statuses, including zero values. | Implemented |
-| T08 | As QA, I need regression coverage for core user journeys. | MockMvc tests and four Selenium journeys with failure screenshot support. | Implemented; execution pending tool install |
-| T09 | As contributor, I need Git/GitHub collaboration conventions. | Ignore rules, issue/PR templates, branch and review policy. | Prepared; remote not created |
+| T08 | As QA, I need regression coverage for core user journeys. | MockMvc tests and four Selenium journeys with failure screenshot support. | Implemented; 4 Selenium journeys passed locally |
+| T09 | As contributor, I need Git/GitHub collaboration conventions. | Ignore rules, issue/PR templates, branch and review policy. | Remote connected; templates present; branch policy and issue evidence pending |
 | T10 | As reviewer, I need a pull-request-based feature/release workflow. | Branch/commit/PR procedure documented. | Prepared; PR not opened |
-| T11 | As developer, I need CI to test, package and archive the application. | Jenkinsfile includes checkout, Maven tests, package and JAR archive. | Configured as code; Jenkins run pending |
-| T12 | As QA, I need browser tests to gate release/deployment. | Main-branch Selenium stage publishes JUnit reports and failure screenshots. | Configured as code; browser agent required |
-| T13 | As operator, I need a versioned container artifact. | Non-root Dockerfile; pipeline tags by Jenkins build number. | Prepared; image build pending Docker daemon |
-| T14 | As platform engineer, I need repeatable host prerequisites and app configuration. | Ansible playbook and localhost inventory cover Docker, user, directory, container. | Prepared; target execution pending |
-| T15 | As operator, I need health, idempotency, and rollback/recovery steps. | Runbook describes second apply, HTTP health check and prior-image redeploy. | Documented; live target evidence pending |
+| T11 | As developer, I need CI to test, package and archive the application. | Jenkinsfile includes checkout, Maven tests, package and JAR archive. | Jenkins multibranch job exists; build #3 failed on a stale-element race; local fix verified, Jenkins rerun pending |
+| T12 | As QA, I need browser tests to gate release/deployment. | All-branch Selenium stage publishes JUnit reports and failure screenshots; failed journeys stop deployment. | Four journeys pass locally after stale-element fix; Jenkins rerun pending updated branch |
+| T13 | As operator, I need a versioned container artifact. | Non-root Dockerfile; pipeline tags by Jenkins build number. | Image built locally; container lifecycle and health check passed |
+| T14 | As platform engineer, I need repeatable host prerequisites and app configuration. | Ansible playbook and localhost inventory cover Docker, user, directory, container. | Prepared; Ansible execution pending a Linux control/target host |
+| T15 | As operator, I need health, idempotency, and rollback/recovery steps. | Runbook describes second apply, HTTP health check and prior-image redeploy. | Local container health/restart verified; Ansible idempotency and rollback pending target execution |
 
 ## Planned increments
 
